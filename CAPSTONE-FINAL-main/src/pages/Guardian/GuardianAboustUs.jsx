@@ -1,5 +1,5 @@
 import React from 'react';
-import teamLeaderImage from '../../assets/paye.png';
+import teamLeaderImage from '../../assets/jhorne.jpg';
 import frontendDevImage from '../../assets/lessa.jpg';
 import backendDevImage from '../../assets/jhorne.jpg';
 import researcherImage from '../../assets/era.jpg';

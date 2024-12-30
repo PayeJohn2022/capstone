@@ -1,15 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import {
-  CalendarIcon,
-  UserGroupIcon,
-  ChatBubbleBottomCenterIcon,
-} from '@heroicons/react/24/outline'; // Heroicons for the new icons
+import { CalendarIcon, UserGroupIcon, ChatBubbleBottomCenterIcon } from '@heroicons/react/24/outline'; // Heroicons for the new icons
 
 const AdminDashboard = () => {
   const [appointmentsToday, setAppointmentsToday] = useState(0);
   const [consultationsToday, setConsultationsToday] = useState(0);
   const [totalPatients, setTotalPatients] = useState(0);
-  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -41,28 +36,12 @@ const AdminDashboard = () => {
     fetchData();
   }, []);
 
-  const handleSearch = (event) => {
-    setSearchQuery(event.target.value);
-    console.log('Search Query:', searchQuery); // Replace this with actual search functionality
-  };
-
   return (
     <main className="flex-1 bg-gradient-to-br from-green-50 to-green-100 p-10 min-h-screen">
       {/* Welcome Message */}
       <h1 className="text-3xl font-extrabold mb-8 text-green-900 tracking-tight">
         Welcome to the Dashboard
       </h1>
-
-      {/* Search Bar */}
-      <div className="mb-8">
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={handleSearch}
-          placeholder="Search..."
-          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 shadow"
-        />
-      </div>
 
       {/* Statistics Section */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-10">

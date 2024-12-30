@@ -34,7 +34,7 @@ const AdminAppointments = () => {
       );
       setAppointments((prevAppointments) =>
         prevAppointments.map((appointment) =>
-          appointment.id === appointmentId
+          appointment.appointmentId === appointmentId
             ? { ...appointment, status }
             : appointment
         )
@@ -53,28 +53,49 @@ const AdminAppointments = () => {
   const sortAppointments = (appointments) => {
     return appointments.sort((a, b) => {
       let comparison = 0;
-
+  
       if (sortBy === 'date') {
         comparison = new Date(a.date) - new Date(b.date);
       } else if (sortBy === 'time') {
         comparison = new Date(`1970-01-01T${a.timeStart}`) - new Date(`1970-01-01T${b.timeStart}`);
       } else if (sortBy === 'patient') {
-        comparison = a.patientId.localeCompare(b.patientId);
+        const patientA = a.patientFullName ? a.patientFullName : ''; // Default to empty string if undefined or null
+        const patientB = b.patientFullName ? b.patientFullName : '';
+        comparison = patientA.localeCompare(patientB); // Alphabetical comparison
       } else if (sortBy === 'guardian') {
-        comparison = a.guardianId.localeCompare(b.guardianId);
+        const guardianA = a.guardianFullName ? a.guardianFullName : '';
+        const guardianB = b.guardianFullName ? b.guardianFullName : '';
+        comparison = guardianA.localeCompare(guardianB); // Alphabetical comparison
       }
-
+  
       return sortOrder === 'asc' ? comparison : -comparison;
     });
   };
+  
+  
 
   const filteredAppointments = sortAppointments(appointments)
-    .filter((appointment) =>
-      `${appointment.patientId} ${appointment.guardianId}`
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase())
-    )
-    .filter((appointment) => (statusFilter ? appointment.status.toLowerCase() === statusFilter.toLowerCase() : true));
+  .filter((appointment) => {
+    // Check if either patientFullName or guardianFullName matches the search term
+    const nameMatch = `${appointment.patientFullName} ${appointment.guardianFullName}`
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+
+    // Check if the searchTerm is a status and if it matches the appointment status
+    const statusMatch = statusFilter
+      ? appointment.status.toLowerCase() === statusFilter.toLowerCase()
+      : true;
+
+    // Check if the search term matches any part of the appointment status
+    const statusSearchMatch = searchTerm
+      ? appointment.status.toLowerCase().includes(searchTerm.toLowerCase())
+      : true;
+
+    // Return true only if both conditions are met: name match + status match
+    return (nameMatch || statusSearchMatch) && statusMatch;
+  });
+
+
 
   if (loading) {
     return <div className="text-center text-lg">Loading appointments...</div>;
@@ -147,9 +168,9 @@ const AdminAppointments = () => {
           </thead>
           <tbody>
             {filteredAppointments.map((appointment) => (
-              <tr key={appointment.id} className="border-b hover:bg-green-50">
-                <td className="px-6 py-4">{appointment.patientId}</td>
-                <td className="px-6 py-4">{appointment.guardianId}</td>
+              <tr key={appointment.appointmentId} className="border-b hover:bg-green-50">
+                <td className="px-6 py-4">{appointment.patientFullName}</td>
+                <td className="px-6 py-4">{appointment.guardianFullName}</td>
                 <td className="px-6 py-4">{appointment.date}</td>
                 <td className="px-6 py-4">{appointment.timeStart} - {appointment.timeEnd}</td>
                 <td className="px-6 py-4">
@@ -165,13 +186,13 @@ const AdminAppointments = () => {
                   {appointment.status.toLowerCase() === 'pending' && (
                     <>
                       <button
-                        onClick={() => handleStatusChange(appointment.id, 'approved')}
+                        onClick={() => handleStatusChange(appointment.appointmentId, 'approved')}
                         className="bg-green-600 text-white py-1 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
                       >
                         Accept
                       </button>
                       <button
-                        onClick={() => handleStatusChange(appointment.id, 'declined')}
+                        onClick={() => handleStatusChange(appointment.appointmentId, 'declined')}
                         className="bg-red-600 text-white py-1 px-4 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
                       >
                         Decline

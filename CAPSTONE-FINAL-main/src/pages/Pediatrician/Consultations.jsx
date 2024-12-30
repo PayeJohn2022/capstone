@@ -1,185 +1,163 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
-const Patients = () => {
-  const [patients, setPatients] = useState([]);
+const API_BASE_URL = 'http://localhost:5000/api/consultations';
+
+const Consultations = () => {
+  const [consultations, setConsultations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortOrder, setSortOrder] = useState('asc'); // 'asc' or 'desc'
-  const [sortBy, setSortBy] = useState('name'); // 'name', 'age', 'guardian', or 'date'
-  const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'pending', 'approved', 'declined'
+  const [sortOption, setSortOption] = useState(''); // Current sort option
+  const [dropdownVisible, setDropdownVisible] = useState(false); // Controls dropdown visibility
 
   useEffect(() => {
-    const fetchPatients = async () => {
+    const fetchConsultations = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/patients');
-        setPatients(response.data);
+        const response = await axios.get(API_BASE_URL);
+        setConsultations(response.data);
       } catch (error) {
-        console.error('Failed to fetch patients:', error);
-        setError('Failed to fetch patients. Please try again.');
+        console.error('Failed to fetch consultations:', error);
+        setError('Failed to fetch consultations. Please try again.');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchPatients();
+    fetchConsultations();
   }, []);
 
-  const handleSearch = (event) => {
-    setSearchQuery(event.target.value);
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
   };
 
-  const handleSortOrderToggle = () => {
-    setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+  const toggleDropdown = () => {
+    setDropdownVisible((prev) => !prev);
   };
 
-  const handleSortChange = (event) => {
-    setSortBy(event.target.value);
+  const handleSortChange = (option) => {
+    setSortOption(option);
+    setDropdownVisible(false); // Close dropdown after selection
   };
 
-  const handleFilterChange = (event) => {
-    setStatusFilter(event.target.value);
+  // Apply sorting and filtering together
+  const getFilteredAndSortedConsultations = () => {
+    let filtered = consultations.filter((consultation) =>
+      consultation.patient_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      consultation.consultation_id.toString().includes(searchQuery)
+    );
+
+    if (sortOption === 'date') {
+      filtered = filtered.sort((a, b) => new Date(a.date) - new Date(b.date));
+    } else if (sortOption === 'name') {
+      filtered = filtered.sort((a, b) =>
+        a.patient_name.localeCompare(b.patient_name)
+      );
+    }
+
+    return filtered;
   };
 
-  const filteredPatients = patients
-    .filter((patient) => {
-      const matchesSearchQuery = patient.name
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase());
-      const matchesStatus =
-        statusFilter === 'all' || patient.status === statusFilter;
-
-      return matchesSearchQuery && matchesStatus;
-    })
-    .sort((a, b) => {
-      let compareA, compareB;
-
-      if (sortBy === 'age') {
-        compareA = a.age;
-        compareB = b.age;
-      } else if (sortBy === 'guardian') {
-        compareA = a.guardian.toLowerCase();
-        compareB = b.guardian.toLowerCase();
-      } else if (sortBy === 'date') {
-        compareA = new Date(a.date);
-        compareB = new Date(b.date);
-      } else {
-        compareA = a.name.toLowerCase();
-        compareB = b.name.toLowerCase();
-      }
-
-      if (sortOrder === 'asc') {
-        return compareA < compareB ? -1 : 1;
-      } else {
-        return compareA > compareB ? -1 : 1;
-      }
-    });
+  const filteredConsultations = getFilteredAndSortedConsultations();
 
   return (
     <main className="flex-1 bg-green-100 p-10 h-screen">
-      {/* Search & Sorting Section */}
-      <div className="bg-white p-5 rounded-lg shadow mb-6">
-        <div className="flex flex-wrap items-center space-x-2">
-          {/* Search Bar */}
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={handleSearch}
-            placeholder="Search by patient name"
-            className="flex-grow p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
-          />
 
-          {/* Sort Dropdown */}
-          <select
-            value={sortBy}
-            onChange={handleSortChange}
-            className="p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
-          >
-            <option value="name">Patient Name</option>
-            <option value="age">Age</option>
-            <option value="guardian">Guardian/Parent</option>
-            <option value="date">Date</option>
-          </select>
+      {/* Search and Filter Bar */}
+      <div className="mb-6 flex items-center space-x-4">
+        <input
+          type="text"
+          placeholder="Search"
+          value={searchQuery}
+          onChange={handleSearchChange}
+          className="flex-1 px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:border-green-500"
+        />
 
-          {/* Ascending/Descending Button */}
+        {/* Filter/Sort Dropdown */}
+        <div className="relative">
           <button
-            onClick={handleSortOrderToggle}
-            className="p-2 border border-gray-300 rounded text-gray-600 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500"
-            title={`Sort ${sortOrder === 'asc' ? 'Descending' : 'Ascending'}`}
+            onClick={toggleDropdown}
+            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 focus:outline-none"
           >
-            {sortOrder === 'asc' ? (
-              <span className="text-green-600">↑</span>
-            ) : (
-              <span className="text-green-600">↓</span>
-            )}
+            Filter/Sort
           </button>
-
-          {/* Status Filter */}
-          <select
-            value={statusFilter}
-            onChange={handleFilterChange}
-            className="p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
-          >
-            <option value="all">All Status</option>
-            <option value="pending">Pending</option>
-            <option value="approved">Approved</option>
-            <option value="declined">Declined</option>
-          </select>
+          {dropdownVisible && (
+            <div className="absolute right-0 mt-2 bg-white shadow-md rounded-lg border border-gray-200 z-10">
+              <button
+                onClick={() => handleSortChange('date')}
+                className="block px-4 py-2 text-left hover:bg-green-100 w-full"
+              >
+                Sort by Date
+              </button>
+              <button
+                onClick={() => handleSortChange('name')}
+                className="block px-4 py-2 text-left hover:bg-green-100 w-full"
+              >
+                Sort by Name
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Patients Table */}
+      {/* Table Container */}
       <div className="bg-white p-5 rounded-lg shadow-lg">
         {loading ? (
-          <p className="text-lg text-green-800">Loading patients...</p>
+          <p className="text-lg text-green-800">Loading consultations...</p>
         ) : error ? (
           <p className="text-lg text-red-500">{error}</p>
-        ) : filteredPatients.length > 0 ? (
+        ) : filteredConsultations.length > 0 ? (
           <table className="w-full table-auto">
             <thead>
               <tr className="bg-green-600 text-white">
-                <th className="py-3 px-4 text-left">Patient ID</th>
+                <th className="py-3 px-4 text-left">Consultation ID</th>
                 <th className="py-3 px-4 text-left">Patient Name</th>
-                <th className="py-3 px-4 text-left">Age</th>
-                <th className="py-3 px-4 text-left">Guardian/Parent</th>
-                <th className="py-3 px-4 text-left">Email</th>
-                <th className="py-3 px-4 text-left">Address</th>
+                <th className="py-3 px-4 text-left">Guardian/Parent</th> 
+                <th className="py-3 px-4 text-left">Date</th>
+                <th className="py-3 px-4 text-left">Time</th>
                 <th className="py-3 px-4 text-left">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filteredPatients.map((patient) => (
-                <tr key={patient.id} className="border-b hover:bg-green-50">
-                  <td className="py-2 px-4">{patient.id}</td>
-                  <td className="py-2 px-4">{patient.name}</td>
-                  <td className="py-2 px-4">{patient.age}</td>
-                  <td className="py-2 px-4">{patient.guardian}</td>
-                  <td className="py-2 px-4">{patient.email}</td>
-                  <td className="py-2 px-4">{patient.address}</td>
-                  <td className="py-2 px-4">
-                    <div className="flex space-x-2">
-                      <button className="text-blue-600 hover:underline">
-                        View
-                      </button>
-                      <button className="text-yellow-500 hover:underline">
-                        Edit
-                      </button>
-                      <button className="text-red-600 hover:underline">
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {filteredConsultations.map((consultation) => {
+                // Ensure time is properly formatted (e.g., "8:30" -> "08:30")
+                const formattedTime = consultation.time.length === 4 ? `0${consultation.time}` : consultation.time;
+                const dateTimeString = `${consultation.date}T${formattedTime}`;
+
+                return (
+                  <tr key={consultation.consultation_id} className="border-b hover:bg-green-50">
+                    <td className="py-2 px-4">{consultation.consultation_id}</td>
+                    <td className="py-2 px-4">{consultation.patient_name}</td>
+                    <td className="py-2 px-4">{appointment.guardian_name}</td> 
+                    <td className="py-2 px-4">
+                      {new Date(consultation.date).toLocaleDateString()}
+                    </td>
+                    <td className="py-2 px-4">
+                      {/* Create valid Date object for time formatting */}
+                      {new Date(dateTimeString).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true, // 12-hour format with AM/PM
+                      })}
+                    </td>
+                    <td className="py-2 px-4">
+                      <div className="flex space-x-2">
+                        <button className="text-blue-600 hover:underline">View</button>
+                        <button className="text-yellow-500 hover:underline">Edit</button>
+                        <button className="text-red-600 hover:underline">Delete</button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         ) : (
-          <p className="text-lg text-green-800">No patients found.</p>
+          <p className="text-lg text-green-800">No consultations available.</p>
         )}
       </div>
     </main>
   );
 };
 
-export default Patients;
+export default Consultations;
